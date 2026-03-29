@@ -1,0 +1,331 @@
+# Sistema de Clinica Medica
+
+Sistema completo de gerenciamento de clinica medica desenvolvido com Spring Boot, implementando autenticacao JWT com 2FA (verificacao em duas etapas), controle de acesso por perfil (RBAC) e sistema de notificacoes.
+
+## Funcionalidades
+
+### Dashboards
+
+O sistema possui 3 dashboards separados:
+
+1. **Dashboard do Paciente**
+   - Criar solicitacao de consulta
+   - Listar suas consultas
+   - Visualizar notificacoes
+
+2. **Dashboard da Recepcao**
+   - Listar consultas pendentes
+   - Aceitar ou recusar consultas
+   - Atribuir medicos as consultas
+   - Visualizar notificacoes
+
+3. **Dashboard do Medico**
+   - Listar consultas aceitas
+   - Visualizar pacientes
+   - Receber notificacoes de novas consultas
+
+### Seguranca
+
+- Autenticacao com JWT (JSON Web Token)
+- Verificacao em duas etapas (2FA) via email
+- Senhas criptografadas com BCrypt
+- Controle de acesso por perfil (RBAC)
+- Sessao stateless
+
+### Sistema de Notificacoes
+
+Notificacoes automaticas entre dashboards:
+- Paciente cria consulta -> Recepcao recebe notificacao
+- Recepcao aceita -> Paciente e Medico recebem notificacao
+- Recepcao recusa -> Paciente recebe notificacao
+
+## Tecnologias Utilizadas
+
+- Java 17+
+- Spring Boot 3.2.0
+- Spring Security
+- Spring Data JPA
+- Spring Mail
+- MySQL
+- JWT (jjwt 0.12.3)
+- Lombok
+- BCrypt
+
+## Estrutura do Projeto
+
+```
+src/main/java/com/clinica/
+├── ClinicaMedicaApplication.java    # Classe principal
+├── config/
+│   ├── AsyncConfig.java             # Config para emails assincronos
+│   └── SecurityConfig.java          # Config do Spring Security
+├── controller/
+│   ├── AuthController.java          # Endpoints de autenticacao
+│   ├── PacienteController.java      # Endpoints do paciente
+│   ├── RecepcaoController.java      # Endpoints da recepcao
+│   ├── MedicoController.java        # Endpoints do medico
+│   └── NotificacaoController.java   # Endpoints de notificacoes
+├── dto/
+│   ├── ApiResponse.java             # Resposta padrao da API
+│   ├── auth/                        # DTOs de autenticacao
+│   ├── consulta/                    # DTOs de consultas
+│   ├── notificacao/                 # DTOs de notificacoes
+│   └── usuario/                     # DTOs de usuarios
+├── entity/
+│   ├── Usuario.java                 # Entidade usuario
+│   ├── Consulta.java                # Entidade consulta
+│   ├── Notificacao.java             # Entidade notificacao
+│   ├── TwoFactorCode.java           # Entidade codigo 2FA
+│   ├── TipoUsuario.java             # Enum tipo usuario
+│   ├── StatusConsulta.java          # Enum status consulta
+│   └── TipoNotificacao.java         # Enum tipo notificacao
+├── exception/
+│   ├── GlobalExceptionHandler.java  # Tratamento global de erros
+│   ├── AuthenticationException.java
+│   ├── BusinessException.java
+│   └── ResourceNotFoundException.java
+├── repository/
+│   ├── UsuarioRepository.java
+│   ├── ConsultaRepository.java
+│   ├── NotificacaoRepository.java
+│   └── TwoFactorCodeRepository.java
+├── security/
+│   ├── JwtUtil.java                 # Utilitario JWT
+│   ├── JwtAuthenticationFilter.java # Filtro JWT
+│   └── CustomUserDetailsService.java
+└── service/
+    ├── AuthService.java             # Servico de autenticacao
+    ├── UsuarioService.java          # Servico de usuarios
+    ├── ConsultaService.java         # Servico de consultas
+    ├── NotificacaoService.java      # Servico de notificacoes
+    ├── TwoFactorService.java        # Servico 2FA
+    └── EmailService.java            # Servico de emails
+```
+
+## Configuracao do Banco de Dados
+
+### 1. Criar o banco MySQL
+
+```sql
+CREATE DATABASE clinica_medica;
+```
+
+### 2. Executar o script SQL
+
+Execute o arquivo `src/main/resources/schema.sql` para criar as tabelas e dados iniciais.
+
+## Configuracao do Projeto
+
+### application.properties
+
+Edite o arquivo `src/main/resources/application.properties`:
+
+```properties
+# Banco de dados
+spring.datasource.url=jdbc:mysql://localhost:3306/clinica_medica
+spring.datasource.username=seu_usuario
+spring.datasource.password=sua_senha
+
+# Email SMTP (Gmail)
+spring.mail.username=seu_email@gmail.com
+spring.mail.password=sua_senha_de_app
+
+# JWT
+jwt.secret=sua_chave_secreta_com_pelo_menos_256_bits
+jwt.expiration=86400000
+```
+
+### Configuracao do Gmail para SMTP
+
+1. Ative a verificacao em duas etapas na sua conta Google
+2. Gere uma "Senha de app" em: Conta Google > Seguranca > Senhas de app
+3. Use essa senha no `spring.mail.password`
+
+## Como Executar
+
+### Pre-requisitos
+
+- Java 17 ou superior
+- Maven
+- MySQL
+
+### Passo a passo
+
+1. Clone o repositorio
+
+2. Configure o banco de dados MySQL
+
+3. Execute o script SQL (`schema.sql`)
+
+4. Configure o `application.properties`
+
+5. Execute o projeto:
+```bash
+mvn spring-boot:run
+```
+
+Ou compile e execute:
+```bash
+mvn clean package
+java -jar target/clinica-medica-1.0.0.jar
+```
+
+O servidor iniciara em `http://localhost:8080`
+
+## Endpoints da API
+
+### Autenticacao (Publicos)
+
+| Metodo | Endpoint | Descricao |
+|--------|----------|-----------|
+| POST | /auth/cadastro | Cadastrar usuario |
+| POST | /auth/login | Login (envia codigo 2FA) |
+| POST | /auth/verificar-2fa | Verificar codigo e obter JWT |
+
+### Paciente
+
+| Metodo | Endpoint | Descricao |
+|--------|----------|-----------|
+| POST | /paciente/consultas | Criar consulta |
+| GET | /paciente/consultas | Listar consultas |
+| GET | /paciente/notificacoes | Listar notificacoes |
+| GET | /paciente/medicos | Listar medicos disponiveis |
+
+### Recepcao
+
+| Metodo | Endpoint | Descricao |
+|--------|----------|-----------|
+| GET | /recepcao/consultas/pendentes | Listar pendentes |
+| PUT | /recepcao/consultas/{id}/aceitar | Aceitar consulta |
+| PUT | /recepcao/consultas/{id}/recusar | Recusar consulta |
+| GET | /recepcao/notificacoes | Listar notificacoes |
+| GET | /recepcao/medicos | Listar medicos |
+
+### Medico
+
+| Metodo | Endpoint | Descricao |
+|--------|----------|-----------|
+| GET | /medico/consultas | Listar consultas aceitas |
+| GET | /medico/pacientes | Listar pacientes |
+| GET | /medico/notificacoes | Listar notificacoes |
+
+### Notificacoes (Autenticado)
+
+| Metodo | Endpoint | Descricao |
+|--------|----------|-----------|
+| PUT | /notificacoes/{id}/marcar-lida | Marcar como lida |
+| PUT | /notificacoes/marcar-todas-lidas | Marcar todas lidas |
+| GET | /notificacoes/contador | Contar nao lidas |
+
+## Exemplos de Uso
+
+### 1. Cadastro de Usuario
+
+```bash
+curl -X POST http://localhost:8080/auth/cadastro \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nome": "Joao Silva",
+    "email": "joao@email.com",
+    "senha": "123456",
+    "tipoUsuario": "PACIENTE",
+    "telefone": "(11) 99999-9999"
+  }'
+```
+
+### 2. Login (Etapa 1)
+
+```bash
+curl -X POST http://localhost:8080/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "joao@email.com",
+    "senha": "123456"
+  }'
+```
+
+### 3. Verificar 2FA (Etapa 2)
+
+```bash
+curl -X POST http://localhost:8080/auth/verificar-2fa \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "joao@email.com",
+    "codigo": "123456"
+  }'
+```
+
+### 4. Criar Consulta (com JWT)
+
+```bash
+curl -X POST http://localhost:8080/paciente/consultas \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer SEU_TOKEN_JWT" \
+  -d '{
+    "dataHora": "2024-12-20T14:30:00",
+    "descricao": "Dor de cabeca frequente",
+    "medicoId": 1
+  }'
+```
+
+### 5. Aceitar Consulta (Recepcao)
+
+```bash
+curl -X PUT http://localhost:8080/recepcao/consultas/1/aceitar \
+  -H "Authorization: Bearer TOKEN_RECEPCAO" \
+  -H "Content-Type: application/json" \
+  -d '{"medicoId": 1}'
+```
+
+## Usuarios de Teste
+
+O script SQL cria usuarios de teste com senha `123456`:
+
+### Medicos
+- carlos.silva@clinica.com (Cardiologia)
+- maria.santos@clinica.com (Pediatria)
+- paulo.oliveira@clinica.com (Ortopedia)
+
+### Recepcao
+- ana.recepcao@clinica.com
+- bruno.recepcao@clinica.com
+
+### Pacientes
+- joao.paciente@email.com
+- julia.paciente@email.com
+
+## Fluxo Completo
+
+1. **Paciente** cria uma consulta
+2. **Recepcao** recebe notificacao
+3. **Recepcao** aceita ou recusa a consulta
+4. Se aceita:
+   - **Paciente** recebe notificacao de aceite
+   - **Medico** recebe notificacao de nova consulta
+5. **Medico** visualiza a consulta em seu dashboard
+
+## Tratamento de Erros
+
+A API retorna respostas padronizadas:
+
+```json
+{
+  "sucesso": false,
+  "mensagem": "Descricao do erro",
+  "dados": null,
+  "timestamp": "2024-01-01T12:00:00"
+}
+```
+
+Codigos HTTP:
+- 200: Sucesso
+- 201: Criado
+- 400: Erro de validacao/negocio
+- 401: Nao autenticado
+- 403: Acesso negado
+- 404: Nao encontrado
+- 500: Erro interno
+
+## Licenca
+
+Este projeto foi desenvolvido para fins educacionais.
